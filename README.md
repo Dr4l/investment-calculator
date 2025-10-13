@@ -63,11 +63,10 @@ src/main/java/com/investmentcalc/
 ├── InvestmentCalculator.java          # Main GUI application
 ├── FinalInvestmentEngine.java        # Core calculation logic (working version)
 ├── InvestmentCalculatorEngine.java    # Original calculation logic
-├── InvestmentCalculatorEngineV2.java # Alternative calculation logic
 ├── InvestmentResult.java             # Data class for results
+├── InvestmentChartPanel.java         # Custom chart panel for displaying investment growth over time
 ├── MonthlyData.java                  # Monthly data structure
-├── YearlyData.java                   # Yearly data structure
-└── ChartPanel.java                   # Chart visualization component
+└── YearlyData.java                   # Yearly data structure
 ```
 
 ## Technical Details
