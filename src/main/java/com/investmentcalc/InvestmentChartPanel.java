@@ -17,11 +17,11 @@ import java.util.List;
 /**
  * Custom chart panel for displaying investment growth over time
  */
-public class ChartPanel extends JPanel {
+public class InvestmentChartPanel extends JPanel { // CHANGED NAME
     private JFreeChart chart;
     private org.jfree.chart.ChartPanel jfreeChartPanel;
     
-    public ChartPanel(JFreeChart chart) {
+    public InvestmentChartPanel(JFreeChart chart) { // CHANGED NAME
         this.chart = chart;
         setLayout(new BorderLayout());
         
@@ -40,10 +40,8 @@ public class ChartPanel extends JPanel {
     }
     
     public void updateChart(InvestmentResult result, String currency) {
-        // Remove existing chart panel
-        if (jfreeChartPanel != null) {
-            remove(jfreeChartPanel);
-        }
+        // Remove all components
+        removeAll();
         
         // Create new chart
         chart = createInvestmentChart(result, currency);
@@ -77,7 +75,7 @@ public class ChartPanel extends JPanel {
             cumulativeContributions = cumulativeContributions.add(data.getContributions());
             
             balanceSeries.add(year, data.getEndBalance().doubleValue());
-            contributionsSeries.add(year, data.getStartBalance().add(cumulativeContributions).doubleValue());
+            contributionsSeries.add(year, cumulativeContributions.doubleValue()); // FIXED: Just cumulative contributions
             interestSeries.add(year, cumulativeInterest.doubleValue());
         }
         
@@ -164,7 +162,7 @@ public class ChartPanel extends JPanel {
     private java.util.Locale getLocaleForCurrency(String currency) {
         switch (currency.trim()) {
             case "USD": return java.util.Locale.US;
-            case "EUR": return java.util.Locale.FRANCE; // France uses Euro
+            case "EUR": return java.util.Locale.FRANCE;
             case "GBP": return java.util.Locale.UK;
             case "JPY": return java.util.Locale.JAPAN;
             case "CAD": return java.util.Locale.CANADA;
