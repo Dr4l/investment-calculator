@@ -31,12 +31,6 @@ public class InvestmentCalculator extends JFrame {
     private InvestmentChartPanel chartPanelComponent;
     private String selectedCurrency = "USD";
 
-    // Main panels that should persist
-    private JPanel mainPanel;
-    private JPanel inputPanel;
-    private JPanel resultsPanel;
-    private JPanel bottomPanel;
-
     public InvestmentCalculator() {
         initializeLookAndFeel();
         calculator = new FinalInvestmentEngine();
@@ -46,7 +40,7 @@ public class InvestmentCalculator extends JFrame {
         
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("Investment Calculator");
-        setSize(1200, 800);
+        setSize(1000, 700); // Smaller window that requires scrolling
         setLocationRelativeTo(null);
     }
 
@@ -83,38 +77,50 @@ public class InvestmentCalculator extends JFrame {
         resultsArea = new JEditorPane();
         resultsArea.setEditable(false);
         resultsArea.setContentType("text/html");
+        resultsArea.setPreferredSize(new Dimension(350, 180));
         
-        // Chart panel - initialize with empty chart
+        // Chart panel
         chartPanelComponent = new InvestmentChartPanel(null);
         
         // Schedule tabbed pane
         scheduleTabbedPane = new JTabbedPane();
-        
-        // Initialize main panels
-        mainPanel = new JPanel(new BorderLayout());
-        inputPanel = createInputPanel();
-        resultsPanel = createResultsPanel();
-        bottomPanel = createBottomPanel();
     }
 
     private void setupLayout() {
-        setLayout(new BorderLayout());
+        // Use a scroll pane as the main container
+        JScrollPane mainScrollPane = new JScrollPane(createMainContent());
+        mainScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        mainScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        mainScrollPane.getVerticalScrollBar().setUnitIncrement(16);
         
-        // Add panels to main frame
-        add(inputPanel, BorderLayout.NORTH);
-        add(resultsPanel, BorderLayout.CENTER);
-        add(bottomPanel, BorderLayout.SOUTH);
+        setLayout(new BorderLayout());
+        add(mainScrollPane, BorderLayout.CENTER);
+    }
+
+    private JPanel createMainContent() {
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Add components with rigid areas to prevent stretching
+        mainPanel.add(createInputPanel());
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        mainPanel.add(createResultsPanel());
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        mainPanel.add(createBottomPanel());
+        
+        return mainPanel;
     }
 
     private JPanel createInputPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Investment Parameters"));
         panel.setBackground(new Color(245, 245, 245));
+        panel.setMaximumSize(new Dimension(950, 220)); // Fixed maximum size
         
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
         
         // Starting Amount
         gbc.gridx = 0; gbc.gridy = 0;
@@ -181,29 +187,38 @@ public class InvestmentCalculator extends JFrame {
     }
 
     private JPanel createResultsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createTitledBorder("Investment Summary"));
+        panel.setMaximumSize(new Dimension(950, 400)); // Fixed maximum size
         
-        // Results text area
-        JScrollPane scrollPane = new JScrollPane(resultsArea);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("Investment Summary"));
-        scrollPane.setPreferredSize(new Dimension(400, 180));
+        // Results area - align to top
+        JScrollPane resultsScrollPane = new JScrollPane(resultsArea);
+        resultsScrollPane.setPreferredSize(new Dimension(350, 180));
+        resultsScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         
-        // Chart panel
+        // Chart panel - fixed size
         JPanel chartContainer = new JPanel(new BorderLayout());
         chartContainer.setBorder(BorderFactory.createTitledBorder("Investment Growth Chart"));
+        chartContainer.setPreferredSize(new Dimension(550, 350));
         chartContainer.add(chartPanelComponent, BorderLayout.CENTER);
         
-        panel.add(scrollPane, BorderLayout.NORTH);
-        panel.add(chartContainer, BorderLayout.CENTER);
+        // Use a split pane to keep results at top and chart below
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, resultsScrollPane, chartContainer);
+        splitPane.setDividerLocation(350);
+        splitPane.setResizeWeight(0.5);
         
+        panel.add(splitPane, BorderLayout.CENTER);
         return panel;
     }
 
     private JPanel createBottomPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Detailed Schedule"));
+        panel.setMaximumSize(new Dimension(950, 300)); // Fixed maximum size
+        
+        scheduleTabbedPane.setPreferredSize(new Dimension(900, 250));
         panel.add(scheduleTabbedPane, BorderLayout.CENTER);
+        
         return panel;
     }
 
@@ -290,13 +305,6 @@ public class InvestmentCalculator extends JFrame {
             String contributionTiming = (String) contributionTimingCombo.getSelectedItem();
             selectedCurrency = ((String) currencyCombo.getSelectedItem()).split("\\s+")[0].trim();
             
-            System.out.println("Starting calculation with:");
-            System.out.println("Starting Amount: " + startingAmount);
-            System.out.println("Years: " + years);
-            System.out.println("Return Rate: " + annualReturnRate);
-            System.out.println("Additional Contribution: " + additionalContribution);
-            System.out.println("Contributions per Year: " + contributionsPerYear);
-            
             // Calculate investment
             InvestmentResult result = calculator.calculateInvestment(
                 startingAmount, years, annualReturnRate, compoundingFrequency,
@@ -304,14 +312,13 @@ public class InvestmentCalculator extends JFrame {
                 contributionTiming.equals("Beginning of Period")
             );
             
-            // Debug: Check if we have data
-            System.out.println("Calculation completed:");
-            System.out.println("Monthly data points: " + result.getMonthlyData().size());
-            System.out.println("Yearly data points: " + result.getYearlyData().size());
-            System.out.println("End balance: " + result.getEndBalance());
+            // Format end balance to 2 decimal places for display
+            BigDecimal formattedEndBalance = result.getEndBalance().setScale(2, RoundingMode.HALF_UP);
+            BigDecimal formattedTotalContributions = result.getTotalContributions().setScale(2, RoundingMode.HALF_UP);
+            BigDecimal formattedTotalInterest = result.getTotalInterest().setScale(2, RoundingMode.HALF_UP);
             
             // Display results
-            displayResults(result);
+            displayResults(result, formattedEndBalance, formattedTotalContributions, formattedTotalInterest);
             
             // Update chart
             updateChart(result);
@@ -334,24 +341,37 @@ public class InvestmentCalculator extends JFrame {
         }
     }
 
-    private void displayResults(InvestmentResult result) {
+    private void displayResults(InvestmentResult result, BigDecimal formattedEndBalance, 
+                              BigDecimal formattedTotalContributions, BigDecimal formattedTotalInterest) {
         String currencySymbol = getCurrencySymbol(selectedCurrency);
         StringBuilder sb = new StringBuilder();
         
-        sb.append("<html><body style='font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; margin: 5px;'>");
-        sb.append("<h3 style='color: #2c5aa0; margin-bottom: 10px;'>Investment Results</h3>");
-        sb.append(String.format("<b>End Balance:</b> %s%,.2f<br>", currencySymbol, result.getEndBalance()));
-        sb.append(String.format("<b>Starting Amount:</b> %s%,.2f<br>", currencySymbol, result.getStartingAmount()));
-        sb.append(String.format("<b>Total Contributions:</b> %s%,.2f<br>", currencySymbol, result.getTotalContributions()));
-        sb.append(String.format("<b>Total Interest Earned:</b> %s%,.2f<br>", currencySymbol, result.getTotalInterest()));
-        sb.append("<hr style='margin: 10px 0;'>");
-        sb.append(String.format("<b>Compounding Frequency:</b> %s<br>", result.getCompoundingFrequency()));
-        sb.append(String.format("<b>Annual Return Rate:</b> %.2f%%<br>", result.getAnnualReturnRate()));
-        sb.append(String.format("<b>Number of Years:</b> %d<br>", result.getYears()));
-        sb.append(String.format("<b>Currency:</b> %s<br>", selectedCurrency));
+        // Investment results at the very top of the summary area
+        sb.append("<html><body style='font-family: Arial, sans-serif; margin: 0; padding: 0;'>");
+        
+        // Main results - always at the top
+        sb.append("<div style='padding: 10px; border-bottom: 1px solid #eee;'>");
+        sb.append("<div style='font-size: 18px; font-weight: bold; color: #2c5aa0; margin-bottom: 10px;'>Investment Results</div>");
+        sb.append(String.format("<div style='font-size: 16px; font-weight: bold; color: #28a745; margin-bottom: 8px;'>End Balance: %s%,.2f</div>", currencySymbol, formattedEndBalance));
+        sb.append(String.format("<div style='margin-bottom: 5px;'><b>Starting Amount:</b> %s%,.2f</div>", currencySymbol, result.getStartingAmount()));
+        sb.append(String.format("<div style='margin-bottom: 5px;'><b>Total Contributions:</b> %s%,.2f</div>", currencySymbol, formattedTotalContributions));
+        sb.append(String.format("<div style='margin-bottom: 5px;'><b>Total Interest Earned:</b> %s%,.2f</div>", currencySymbol, formattedTotalInterest));
+        sb.append("</div>");
+        
+        // Additional details below (will scroll if needed)
+        sb.append("<div style='padding: 10px; font-size: 12px; color: #666;'>");
+        sb.append("<div style='font-weight: bold; margin-bottom: 5px;'>Details:</div>");
+        sb.append(String.format("<div style='margin-bottom: 3px;'>Compounding Frequency: %s</div>", result.getCompoundingFrequency()));
+        sb.append(String.format("<div style='margin-bottom: 3px;'>Annual Return Rate: %.2f%%</div>", result.getAnnualReturnRate()));
+        sb.append(String.format("<div style='margin-bottom: 3px;'>Number of Years: %d</div>", result.getYears()));
+        sb.append(String.format("<div style='margin-bottom: 3px;'>Currency: %s</div>", selectedCurrency));
+        sb.append("</div>");
+        
         sb.append("</body></html>");
         
         resultsArea.setText(sb.toString());
+        // Scroll to top to ensure results are visible
+        resultsArea.setCaretPosition(0);
     }
     
     private String getCurrencySymbol(String currency) {
@@ -367,8 +387,6 @@ public class InvestmentCalculator extends JFrame {
     }
 
     private void updateChart(InvestmentResult result) {
-        // This method now simply delegates to the chart panel component
-        // The chart panel handles its own updates internally
         chartPanelComponent.updateChart(result, selectedCurrency);
     }
 
@@ -382,18 +400,14 @@ public class InvestmentCalculator extends JFrame {
                 annualSchedule.setEditable(false);
                 annualSchedule.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
                 annualSchedule.setText(generateAnnualSchedule(result));
-                JScrollPane annualScroll = new JScrollPane(annualSchedule);
-                annualScroll.setPreferredSize(new Dimension(800, 200));
-                scheduleTabbedPane.addTab("Annual Schedule", annualScroll);
+                scheduleTabbedPane.addTab("Annual Schedule", new JScrollPane(annualSchedule));
                 
-                // Monthly Schedule
+                // Monthly Schedule - Show ALL months
                 JTextArea monthlySchedule = new JTextArea();
                 monthlySchedule.setEditable(false);
                 monthlySchedule.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 10));
                 monthlySchedule.setText(generateMonthlySchedule(result));
-                JScrollPane monthlyScroll = new JScrollPane(monthlySchedule);
-                monthlyScroll.setPreferredSize(new Dimension(800, 200));
-                scheduleTabbedPane.addTab("Monthly Schedule", monthlyScroll);
+                scheduleTabbedPane.addTab("Monthly Schedule", new JScrollPane(monthlySchedule));
                 
                 // Force UI update
                 scheduleTabbedPane.revalidate();
@@ -421,10 +435,10 @@ public class InvestmentCalculator extends JFrame {
         for (YearlyData data : yearlyData) {
             sb.append(String.format("%-6d %s%15.2f %s%15.2f %s%15.2f %s%15.2f%n",
                 data.getYear(), 
-                currencySymbol, data.getStartBalance(), 
-                currencySymbol, data.getContributions(),
-                currencySymbol, data.getInterestEarned(), 
-                currencySymbol, data.getEndBalance()));
+                currencySymbol, data.getStartBalance().setScale(2, RoundingMode.HALF_UP), 
+                currencySymbol, data.getContributions().setScale(2, RoundingMode.HALF_UP),
+                currencySymbol, data.getInterestEarned().setScale(2, RoundingMode.HALF_UP), 
+                currencySymbol, data.getEndBalance().setScale(2, RoundingMode.HALF_UP)));
         }
         
         return sb.toString();
@@ -439,21 +453,21 @@ public class InvestmentCalculator extends JFrame {
         sb.append("-".repeat(90)).append("\n");
         
         List<MonthlyData> monthlyData = result.getMonthlyData();
-        int maxRows = Math.min(60, monthlyData.size()); // Show max 5 years of monthly data
         
-        for (int i = 0; i < maxRows; i++) {
+        // Show ALL monthly data - no limit
+        for (int i = 0; i < monthlyData.size(); i++) {
             MonthlyData data = monthlyData.get(i);
             sb.append(String.format("%-10s %s%15.2f %s%15.2f %s%15.2f %s%15.2f%n",
                 data.getMonth(),
-                currencySymbol, data.getStartBalance(), 
-                currencySymbol, data.getContributions(),
-                currencySymbol, data.getInterestEarned(), 
-                currencySymbol, data.getEndBalance()));
+                currencySymbol, data.getStartBalance().setScale(2, RoundingMode.HALF_UP), 
+                currencySymbol, data.getContributions().setScale(2, RoundingMode.HALF_UP),
+                currencySymbol, data.getInterestEarned().setScale(2, RoundingMode.HALF_UP), 
+                currencySymbol, data.getEndBalance().setScale(2, RoundingMode.HALF_UP)));
         }
         
-        if (monthlyData.size() > maxRows) {
-            sb.append("\n... (showing first ").append(maxRows).append(" months, total: ").append(monthlyData.size()).append(" months)\n");
-        }
+        // Add summary at the end
+        sb.append("-".repeat(90)).append("\n");
+        sb.append(String.format("Total months: %d%n", monthlyData.size()));
         
         return sb.toString();
     }
