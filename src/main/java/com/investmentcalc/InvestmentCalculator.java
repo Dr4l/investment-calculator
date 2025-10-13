@@ -213,14 +213,59 @@ public class InvestmentCalculator extends JFrame {
         chartContainer.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         
         // Add mouse listener for full-screen functionality
-        chartContainer.addMouseListener(new MouseAdapter() {
+        MouseAdapter fullScreenListener = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                System.out.println("Chart container clicked - showing full screen"); // Debug line
+                showFullScreenChart();
+            }
+            
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                chartContainer.setBorder(BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(Color.BLUE, 2), 
+                    "Investment Growth Chart (Click to view full screen)"));
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                chartContainer.setBorder(BorderFactory.createTitledBorder("Investment Growth Chart (Click to view full screen)"));
+            }
+        };
+        
+        // Add listener to container
+        chartContainer.addMouseListener(fullScreenListener);
+        
+        // Add a glass pane overlay to capture all clicks on the chart area
+        JPanel chartOverlay = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                // Make this panel transparent
+                g.setColor(new Color(0, 0, 0, 0));
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        chartOverlay.setOpaque(false);
+        chartOverlay.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        chartOverlay.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                System.out.println("Chart overlay clicked - showing full screen"); // Debug line
                 showFullScreenChart();
             }
         });
         
-        chartContainer.add(chartPanelComponent, BorderLayout.CENTER);
+        // Use a layered pane to put the overlay on top
+        JLayeredPane layeredPane = new JLayeredPane();
+        layeredPane.setPreferredSize(new Dimension(550, 320));
+        
+        chartPanelComponent.setBounds(0, 0, 550, 320);
+        chartOverlay.setBounds(0, 0, 550, 320);
+        
+        layeredPane.add(chartPanelComponent, JLayeredPane.DEFAULT_LAYER);
+        layeredPane.add(chartOverlay, JLayeredPane.PALETTE_LAYER);
+        
+        chartContainer.add(layeredPane, BorderLayout.CENTER);
         
         // Use a split pane to keep results at top and chart below
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, resultsScrollPane, chartContainer);
@@ -339,6 +384,44 @@ public class InvestmentCalculator extends JFrame {
             }
         };
         
+        // Add click listener to show information dialog
+        chartPanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                ChartEntity entity = chartPanel.getChartRenderingInfo().getEntityCollection()
+                    .getEntity(e.getPoint().getX(), e.getPoint().getY());
+                if (entity instanceof XYItemEntity) {
+                    XYItemEntity xyEntity = (XYItemEntity) entity;
+                    XYDataset dataset = xyEntity.getDataset();
+                    int series = xyEntity.getSeriesIndex();
+                    int item = xyEntity.getItem();
+                    
+                    double xValue = dataset.getXValue(series, item);
+                    double yValue = dataset.getYValue(series, item);
+                    String seriesName = dataset.getSeriesKey(series).toString();
+                    String currencySymbol = getCurrencySymbol(selectedCurrency);
+                    
+                    // Create detailed information dialog
+                    String message = String.format(
+                        "<html><div style='font-family: Arial; font-size: 14px;'>" +
+                        "<h3 style='color: #2c5aa0; margin-bottom: 10px;'>%s</h3>" +
+                        "<div style='margin-bottom: 8px;'><b>Year:</b> %.0f</div>" +
+                        "<div style='margin-bottom: 8px;'><b>Value:</b> %s%,.2f</div>" +
+                        "<div style='font-size: 12px; color: #666; margin-top: 15px;'>Click on any data point to see detailed information</div>" +
+                        "</div></html>",
+                        seriesName, xValue, currencySymbol, yValue
+                    );
+                    
+                    JOptionPane.showMessageDialog(
+                        chartPanel,
+                        message,
+                        "Investment Data Point",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
+                }
+            }
+        });
+        
         // Configure the chart panel for full screen
         chartPanel.setPreferredSize(new Dimension(1200, 800));
         chartPanel.setMaximumDrawWidth(2000);
@@ -346,7 +429,7 @@ public class InvestmentCalculator extends JFrame {
         chartPanel.setMinimumDrawWidth(100);
         chartPanel.setMinimumDrawHeight(100);
         
-        // Enable tooltips
+        // Enable tooltips (for hover effect)
         chartPanel.setDisplayToolTips(true);
         
         return chartPanel;
