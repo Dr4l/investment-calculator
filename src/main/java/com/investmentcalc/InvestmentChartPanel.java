@@ -158,6 +158,10 @@ public class InvestmentChartPanel extends JPanel { // CHANGED NAME
             default: return "$";
         }
     }
+
+    public JFreeChart getCurrentChart() {
+    return chart;
+    }
     
     private java.util.Locale getLocaleForCurrency(String currency) {
         switch (currency.trim()) {

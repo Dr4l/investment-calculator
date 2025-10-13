@@ -1,10 +1,18 @@
 package com.investmentcalc;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.ChartUtils;
+import org.jfree.chart.entity.ChartEntity;
+import org.jfree.chart.entity.XYItemEntity;
+import org.jfree.data.xy.XYDataset;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -30,6 +38,8 @@ public class InvestmentCalculator extends JFrame {
     private FinalInvestmentEngine calculator;
     private InvestmentChartPanel chartPanelComponent;
     private String selectedCurrency = "USD";
+    
+    private JFrame fullScreenChartFrame;
 
     public InvestmentCalculator() {
         initializeLookAndFeel();
@@ -196,10 +206,20 @@ public class InvestmentCalculator extends JFrame {
         resultsScrollPane.setPreferredSize(new Dimension(350, 180));
         resultsScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         
-        // Chart panel - fixed size
+        // Chart panel - fixed size with click listener
         JPanel chartContainer = new JPanel(new BorderLayout());
-        chartContainer.setBorder(BorderFactory.createTitledBorder("Investment Growth Chart"));
+        chartContainer.setBorder(BorderFactory.createTitledBorder("Investment Growth Chart (Click to view full screen)"));
         chartContainer.setPreferredSize(new Dimension(550, 350));
+        chartContainer.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        
+        // Add mouse listener for full-screen functionality
+        chartContainer.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                showFullScreenChart();
+            }
+        });
+        
         chartContainer.add(chartPanelComponent, BorderLayout.CENTER);
         
         // Use a split pane to keep results at top and chart below
@@ -231,6 +251,161 @@ public class InvestmentCalculator extends JFrame {
         returnRateField.addActionListener(calculateAction);
         additionalContributionField.addActionListener(calculateAction);
         contributionFrequencyField.addActionListener(calculateAction);
+    }
+
+    private void showFullScreenChart() {
+        if (chartPanelComponent.getCurrentChart() == null) {
+            JOptionPane.showMessageDialog(this, 
+                "No chart available. Please calculate an investment first.", 
+                "No Chart", 
+                JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        // Create full-screen frame
+        fullScreenChartFrame = new JFrame("Investment Growth Chart - Full Screen");
+        fullScreenChartFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        fullScreenChartFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        fullScreenChartFrame.setUndecorated(false);
+        
+        // Create a panel for the full-screen chart
+        JPanel fullScreenPanel = new JPanel(new BorderLayout());
+        fullScreenPanel.setBackground(Color.WHITE);
+        
+        // Create enhanced chart panel for full screen with tooltips
+        org.jfree.chart.ChartPanel fullScreenChartPanel = createEnhancedChartPanel();
+        
+        // Add close button at the top
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        controlPanel.setBackground(Color.WHITE);
+        
+        JButton closeButton = new JButton("Close Full Screen");
+        closeButton.setBackground(new Color(220, 53, 69));
+        closeButton.setForeground(Color.WHITE);
+        closeButton.setFocusPainted(false);
+        closeButton.addActionListener(e -> fullScreenChartFrame.dispose());
+        
+        JButton printButton = new JButton("Save Chart Image");
+        printButton.setBackground(new Color(40, 167, 69));
+        printButton.setForeground(Color.WHITE);
+        printButton.setFocusPainted(false);
+        printButton.addActionListener(e -> saveChartImage());
+        
+        controlPanel.add(printButton);
+        controlPanel.add(closeButton);
+        
+        fullScreenPanel.add(controlPanel, BorderLayout.NORTH);
+        fullScreenPanel.add(fullScreenChartPanel, BorderLayout.CENTER);
+        
+        fullScreenChartFrame.add(fullScreenPanel);
+        fullScreenChartFrame.pack();
+        fullScreenChartFrame.setLocationRelativeTo(this);
+        fullScreenChartFrame.setVisible(true);
+        
+        // Add ESC key listener to close full screen
+        fullScreenChartPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(KeyStroke.getKeyStroke("ESCAPE"), "closeFullScreen");
+        fullScreenChartPanel.getActionMap().put("closeFullScreen", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                fullScreenChartFrame.dispose();
+            }
+        });
+    }
+    
+    private org.jfree.chart.ChartPanel createEnhancedChartPanel() {
+        JFreeChart chart = chartPanelComponent.getCurrentChart();
+        
+        // Create a chart panel with enhanced tooltips
+        org.jfree.chart.ChartPanel chartPanel = new org.jfree.chart.ChartPanel(chart) {
+            @Override
+            public String getToolTipText(MouseEvent e) {
+                ChartEntity entity = getChartRenderingInfo().getEntityCollection().getEntity(e.getPoint().getX(), e.getPoint().getY());
+                if (entity instanceof XYItemEntity) {
+                    XYItemEntity xyEntity = (XYItemEntity) entity;
+                    XYDataset dataset = xyEntity.getDataset();
+                    int series = xyEntity.getSeriesIndex();
+                    int item = xyEntity.getItem();
+                    
+                    double xValue = dataset.getXValue(series, item);
+                    double yValue = dataset.getYValue(series, item);
+                    String seriesName = dataset.getSeriesKey(series).toString();
+                    String currencySymbol = getCurrencySymbol(selectedCurrency);
+                    
+                    return String.format("<html><b>%s</b><br>Year: %.0f<br>Value: %s%,.2f</html>", 
+                        seriesName, xValue, currencySymbol, yValue);
+                }
+                return super.getToolTipText(e);
+            }
+        };
+        
+        // Configure the chart panel for full screen
+        chartPanel.setPreferredSize(new Dimension(1200, 800));
+        chartPanel.setMaximumDrawWidth(2000);
+        chartPanel.setMaximumDrawHeight(2000);
+        chartPanel.setMinimumDrawWidth(100);
+        chartPanel.setMinimumDrawHeight(100);
+        
+        // Enable tooltips
+        chartPanel.setDisplayToolTips(true);
+        
+        return chartPanel;
+    }
+    
+    private void saveChartImage() {
+        if (chartPanelComponent.getCurrentChart() == null) {
+            return;
+        }
+        
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Save Chart Image");
+        fileChooser.setSelectedFile(new java.io.File("investment_chart.png"));
+        
+        // Set file filter for image formats
+        javax.swing.filechooser.FileNameExtensionFilter pngFilter = 
+            new javax.swing.filechooser.FileNameExtensionFilter("PNG Images (*.png)", "png");
+        javax.swing.filechooser.FileNameExtensionFilter jpgFilter = 
+            new javax.swing.filechooser.FileNameExtensionFilter("JPEG Images (*.jpg)", "jpg");
+        fileChooser.addChoosableFileFilter(pngFilter);
+        fileChooser.addChoosableFileFilter(jpgFilter);
+        fileChooser.setFileFilter(pngFilter);
+        
+        int userSelection = fileChooser.showSaveDialog(this);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            try {
+                java.io.File fileToSave = fileChooser.getSelectedFile();
+                String format = "png";
+                
+                if (fileChooser.getFileFilter() == jpgFilter) {
+                    format = "jpg";
+                    if (!fileToSave.getName().toLowerCase().endsWith(".jpg")) {
+                        fileToSave = new java.io.File(fileToSave.getAbsolutePath() + ".jpg");
+                    }
+                } else {
+                    if (!fileToSave.getName().toLowerCase().endsWith(".png")) {
+                        fileToSave = new java.io.File(fileToSave.getAbsolutePath() + ".png");
+                    }
+                }
+                
+                // Save the chart as image
+                ChartUtils.saveChartAsPNG(
+                    fileToSave, 
+                    chartPanelComponent.getCurrentChart(), 
+                    1200, 800);
+                
+                JOptionPane.showMessageDialog(this, 
+                    "Chart saved successfully!", 
+                    "Success", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                    
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, 
+                    "Error saving chart: " + e.getMessage(), 
+                    "Save Error", 
+                    JOptionPane.ERROR_MESSAGE);
+                e.printStackTrace();
+            }
+        }
     }
 
     private void calculateInvestment() {
