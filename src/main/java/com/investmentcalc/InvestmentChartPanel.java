@@ -17,11 +17,11 @@ import java.util.List;
 /**
  * Custom chart panel for displaying investment growth over time
  */
-public class InvestmentChartPanel extends JPanel { // CHANGED NAME
+public class InvestmentChartPanel extends JPanel {
     private JFreeChart chart;
     private org.jfree.chart.ChartPanel jfreeChartPanel;
     
-    public InvestmentChartPanel(JFreeChart chart) { // CHANGED NAME
+    public InvestmentChartPanel(JFreeChart chart) {
         this.chart = chart;
         setLayout(new BorderLayout());
         
@@ -57,25 +57,30 @@ public class InvestmentChartPanel extends JPanel { // CHANGED NAME
     private JFreeChart createInvestmentChart(InvestmentResult result, String currency) {
         // Create datasets for different lines
         XYSeries balanceSeries = new XYSeries("Total Balance");
-        XYSeries contributionsSeries = new XYSeries("Total Contributions");
-        XYSeries interestSeries = new XYSeries("Interest Earned");
+        XYSeries contributionsSeries = new XYSeries("Cumulative Additional Contributions"); // Changed for clarity
+        XYSeries interestSeries = new XYSeries("Total Interest");
         
         List<YearlyData> yearlyData = result.getYearlyData();
         
-        // Add data points - calculate cumulative values
+        // Initialize cumulative values
         BigDecimal cumulativeInterest = BigDecimal.ZERO;
+        // This tracks ONLY additional contributions, starting from zero
         BigDecimal cumulativeContributions = BigDecimal.ZERO;
         
-        for (int i = 0; i < yearlyData.size(); i++) {
-            YearlyData data = yearlyData.get(i);
+        // Add initial data points at Year 0 for a clean start
+        balanceSeries.add(0, result.getStartingAmount().doubleValue());
+        contributionsSeries.add(0, 0.0); // Additional contributions are 0 at the start
+        interestSeries.add(0, 0.0);
+        
+        for (YearlyData data : yearlyData) {
             int year = data.getYear();
             
-            // Update cumulative values
+            // Update cumulative values for each year
             cumulativeInterest = cumulativeInterest.add(data.getInterestEarned());
             cumulativeContributions = cumulativeContributions.add(data.getContributions());
             
             balanceSeries.add(year, data.getEndBalance().doubleValue());
-            contributionsSeries.add(year, cumulativeContributions.doubleValue()); // FIXED: Just cumulative contributions
+            contributionsSeries.add(year, cumulativeContributions.doubleValue());
             interestSeries.add(year, cumulativeInterest.doubleValue());
         }
         

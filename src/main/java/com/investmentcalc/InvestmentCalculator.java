@@ -37,6 +37,7 @@ public class InvestmentCalculator extends JFrame {
     
     private FinalInvestmentEngine calculator;
     private InvestmentChartPanel chartPanelComponent;
+    private InvestmentPieChartPanel pieChartPanelComponent; // Added pie chart panel
     private String selectedCurrency = "USD";
     
     private JFrame fullScreenChartFrame;
@@ -50,7 +51,7 @@ public class InvestmentCalculator extends JFrame {
         
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("Investment Calculator");
-        setSize(1000, 700); // Smaller window that requires scrolling
+        setSize(1000, 800); // Increased height to better fit new chart
         setLocationRelativeTo(null);
     }
 
@@ -89,8 +90,9 @@ public class InvestmentCalculator extends JFrame {
         resultsArea.setContentType("text/html");
         resultsArea.setPreferredSize(new Dimension(350, 180));
         
-        // Chart panel
+        // Chart panels
         chartPanelComponent = new InvestmentChartPanel(null);
+        pieChartPanelComponent = new InvestmentPieChartPanel(null); // Initialize pie chart panel
         
         // Schedule tabbed pane
         scheduleTabbedPane = new JTabbedPane();
@@ -198,25 +200,31 @@ public class InvestmentCalculator extends JFrame {
 
     private JPanel createResultsPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createTitledBorder("Investment Summary"));
-        panel.setMaximumSize(new Dimension(950, 400)); // Fixed maximum size
-        
-        // Results area - align to top
+        panel.setBorder(BorderFactory.createTitledBorder("Investment Summary & Visualization"));
+        panel.setMaximumSize(new Dimension(950, 600)); // Increased height
+    
+        // Left side: Results summary text
         JScrollPane resultsScrollPane = new JScrollPane(resultsArea);
         resultsScrollPane.setPreferredSize(new Dimension(350, 180));
         resultsScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        
-        // Chart panel - fixed size with click listener
+    
+        // Right side: Panel to hold both charts vertically
+        JPanel chartsPanel = new JPanel();
+        chartsPanel.setLayout(new BoxLayout(chartsPanel, BoxLayout.Y_AXIS));
+    
+        // Top chart: Pie Chart
+        pieChartPanelComponent.setPreferredSize(new Dimension(550, 250));
+        pieChartPanelComponent.setMaximumSize(new Dimension(Integer.MAX_VALUE, 250)); // Constrain height
+    
+        // Bottom chart: Line Chart with click-to-fullscreen
         JPanel chartContainer = new JPanel(new BorderLayout());
         chartContainer.setBorder(BorderFactory.createTitledBorder("Investment Growth Chart (Click to view full screen)"));
-        chartContainer.setPreferredSize(new Dimension(550, 350));
         chartContainer.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
+    
         // Add mouse listener for full-screen functionality
         MouseAdapter fullScreenListener = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                System.out.println("Chart container clicked - showing full screen"); // Debug line
                 showFullScreenChart();
             }
             
@@ -232,45 +240,33 @@ public class InvestmentCalculator extends JFrame {
                 chartContainer.setBorder(BorderFactory.createTitledBorder("Investment Growth Chart (Click to view full screen)"));
             }
         };
-        
-        // Add listener to container
         chartContainer.addMouseListener(fullScreenListener);
-        
-        // Add a glass pane overlay to capture all clicks on the chart area
-        JPanel chartOverlay = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                // Make this panel transparent
-                g.setColor(new Color(0, 0, 0, 0));
-                g.fillRect(0, 0, getWidth(), getHeight());
-            }
-        };
-        chartOverlay.setOpaque(false);
-        chartOverlay.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        chartOverlay.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                System.out.println("Chart overlay clicked - showing full screen"); // Debug line
-                showFullScreenChart();
-            }
-        });
-        
-        // Use a layered pane to put the overlay on top
+    
+        // Use a layered pane to put a transparent overlay on the line chart for clicks
         JLayeredPane layeredPane = new JLayeredPane();
         layeredPane.setPreferredSize(new Dimension(550, 320));
         
         chartPanelComponent.setBounds(0, 0, 550, 320);
+        
+        JPanel chartOverlay = new JPanel();
+        chartOverlay.setOpaque(false);
         chartOverlay.setBounds(0, 0, 550, 320);
+        chartOverlay.addMouseListener(fullScreenListener); // Add listener to overlay
         
         layeredPane.add(chartPanelComponent, JLayeredPane.DEFAULT_LAYER);
         layeredPane.add(chartOverlay, JLayeredPane.PALETTE_LAYER);
         
         chartContainer.add(layeredPane, BorderLayout.CENTER);
-        
-        // Use a split pane to keep results at top and chart below
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, resultsScrollPane, chartContainer);
+    
+        // Add both charts to the vertical charts panel
+        chartsPanel.add(pieChartPanelComponent);
+        chartsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        chartsPanel.add(chartContainer);
+    
+        // Use a split pane to separate text results from the charts
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, resultsScrollPane, chartsPanel);
         splitPane.setDividerLocation(350);
-        splitPane.setResizeWeight(0.5);
+        splitPane.setResizeWeight(0.35); // Give less resize weight to the text area
         
         panel.add(splitPane, BorderLayout.CENTER);
         return panel;
@@ -573,8 +569,11 @@ public class InvestmentCalculator extends JFrame {
             // Display results
             displayResults(result, formattedEndBalance, formattedTotalContributions, formattedTotalInterest);
             
-            // Update chart
+            // Update line chart
             updateChart(result);
+            
+            // Update pie chart
+            updatePieChart(result);
             
             // Update schedules
             updateSchedules(result);
@@ -609,10 +608,12 @@ public class InvestmentCalculator extends JFrame {
         sb.append(String.format("<div style='margin-bottom: 5px;'><b>Starting Amount:</b> %s%,.2f</div>", currencySymbol, result.getStartingAmount()));
         
         // Update the label based on whether it's contributions or withdrawals
-        if (formattedTotalContributions.compareTo(BigDecimal.ZERO) >= 0) {
-            sb.append(String.format("<div style='margin-bottom: 5px;'><b>Total Contributions:</b> %s%,.2f</div>", currencySymbol, formattedTotalContributions));
+        // Note: formattedTotalContributions includes the starting amount.
+        BigDecimal additionalContributions = formattedTotalContributions.subtract(result.getStartingAmount());
+        if (additionalContributions.compareTo(BigDecimal.ZERO) >= 0) {
+            sb.append(String.format("<div style='margin-bottom: 5px;'><b>Total Additional Contributions:</b> %s%,.2f</div>", currencySymbol, additionalContributions));
         } else {
-            sb.append(String.format("<div style='margin-bottom: 5px;'><b>Total Withdrawals:</b> %s%,.2f</div>", currencySymbol, formattedTotalContributions.abs()));
+            sb.append(String.format("<div style='margin-bottom: 5px;'><b>Total Withdrawals:</b> %s%,.2f</div>", currencySymbol, additionalContributions.abs()));
         }
         
         sb.append(String.format("<div style='margin-bottom: 5px;'><b>Total Interest Earned:</b> %s%,.2f</div>", currencySymbol, formattedTotalInterest));
@@ -627,9 +628,9 @@ public class InvestmentCalculator extends JFrame {
         sb.append(String.format("<div style='margin-bottom: 3px;'>Currency: %s</div>", selectedCurrency));
         
         // Add note about negative contributions
-        if (result.getTotalContributions().compareTo(BigDecimal.ZERO) < 0) {
+        if (result.getTotalContributions().subtract(result.getStartingAmount()).compareTo(BigDecimal.ZERO) < 0) {
             sb.append("<div style='margin-top: 10px; padding: 8px; background-color: #fff3cd; border-radius: 4px; color: #856404;'>");
-            sb.append("<small><b>Note:</b> Negative values indicate withdrawals from the account.</small>");
+            sb.append("<small><b>Note:</b> Negative contribution values indicate withdrawals from the account.</small>");
             sb.append("</div>");
         }
         
@@ -656,6 +657,10 @@ public class InvestmentCalculator extends JFrame {
 
     private void updateChart(InvestmentResult result) {
         chartPanelComponent.updateChart(result, selectedCurrency);
+    }
+    
+    private void updatePieChart(InvestmentResult result) {
+        pieChartPanelComponent.updateChart(result, selectedCurrency);
     }
 
     private void updateSchedules(InvestmentResult result) {
@@ -696,7 +701,7 @@ public class InvestmentCalculator extends JFrame {
         String currencySymbol = getCurrencySymbol(selectedCurrency);
         
         // Update column header based on whether we have contributions or withdrawals
-        boolean hasWithdrawals = result.getTotalContributions().compareTo(BigDecimal.ZERO) < 0;
+        boolean hasWithdrawals = result.getTotalContributions().subtract(result.getStartingAmount()).compareTo(BigDecimal.ZERO) < 0;
         String contributionLabel = hasWithdrawals ? "Withdrawals" : "Contributions";
         
         sb.append(String.format("%-6s %-18s %-18s %-18s %-18s%n", 
@@ -721,7 +726,7 @@ public class InvestmentCalculator extends JFrame {
         String currencySymbol = getCurrencySymbol(selectedCurrency);
         
         // Update column header based on whether we have contributions or withdrawals
-        boolean hasWithdrawals = result.getTotalContributions().compareTo(BigDecimal.ZERO) < 0;
+        boolean hasWithdrawals = result.getTotalContributions().subtract(result.getStartingAmount()).compareTo(BigDecimal.ZERO) < 0;
         String contributionLabel = hasWithdrawals ? "Withdrawals" : "Contributions";
         
         sb.append(String.format("%-10s %-18s %-18s %-18s %-18s%n", 
