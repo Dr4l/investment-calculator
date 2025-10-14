@@ -156,9 +156,9 @@ public class InvestmentCalculator extends JFrame {
         gbc.gridx = 1;
         panel.add(compoundingCombo, gbc);
         
-        // Additional Contribution
+        // Additional Contribution - updated label to indicate withdrawals are allowed
         gbc.gridx = 2; gbc.gridy = 0;
-        panel.add(new JLabel("Annual Additional Contribution:"), gbc);
+        panel.add(new JLabel("Annual Contribution/Withdrawal:"), gbc);
         gbc.gridx = 3;
         panel.add(additionalContributionField, gbc);
         
@@ -543,13 +543,8 @@ public class InvestmentCalculator extends JFrame {
                 return;
             }
             
-            if (additionalContribution.compareTo(BigDecimal.ZERO) < 0) {
-                JOptionPane.showMessageDialog(this, 
-                    "Additional contribution cannot be negative.", 
-                    "Invalid Input", 
-                    JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+            // Remove the validation that prevented negative additional contributions
+            // Additional contribution can now be negative (withdrawals)
             
             if (contributionsPerYear < 0 || contributionsPerYear > 365) {
                 JOptionPane.showMessageDialog(this, 
@@ -612,7 +607,14 @@ public class InvestmentCalculator extends JFrame {
         sb.append("<div style='font-size: 18px; font-weight: bold; color: #2c5aa0; margin-bottom: 10px;'>Investment Results</div>");
         sb.append(String.format("<div style='font-size: 16px; font-weight: bold; color: #28a745; margin-bottom: 8px;'>End Balance: %s%,.2f</div>", currencySymbol, formattedEndBalance));
         sb.append(String.format("<div style='margin-bottom: 5px;'><b>Starting Amount:</b> %s%,.2f</div>", currencySymbol, result.getStartingAmount()));
-        sb.append(String.format("<div style='margin-bottom: 5px;'><b>Total Contributions:</b> %s%,.2f</div>", currencySymbol, formattedTotalContributions));
+        
+        // Update the label based on whether it's contributions or withdrawals
+        if (formattedTotalContributions.compareTo(BigDecimal.ZERO) >= 0) {
+            sb.append(String.format("<div style='margin-bottom: 5px;'><b>Total Contributions:</b> %s%,.2f</div>", currencySymbol, formattedTotalContributions));
+        } else {
+            sb.append(String.format("<div style='margin-bottom: 5px;'><b>Total Withdrawals:</b> %s%,.2f</div>", currencySymbol, formattedTotalContributions.abs()));
+        }
+        
         sb.append(String.format("<div style='margin-bottom: 5px;'><b>Total Interest Earned:</b> %s%,.2f</div>", currencySymbol, formattedTotalInterest));
         sb.append("</div>");
         
@@ -623,6 +625,14 @@ public class InvestmentCalculator extends JFrame {
         sb.append(String.format("<div style='margin-bottom: 3px;'>Annual Return Rate: %.2f%%</div>", result.getAnnualReturnRate()));
         sb.append(String.format("<div style='margin-bottom: 3px;'>Number of Years: %d</div>", result.getYears()));
         sb.append(String.format("<div style='margin-bottom: 3px;'>Currency: %s</div>", selectedCurrency));
+        
+        // Add note about negative contributions
+        if (result.getTotalContributions().compareTo(BigDecimal.ZERO) < 0) {
+            sb.append("<div style='margin-top: 10px; padding: 8px; background-color: #fff3cd; border-radius: 4px; color: #856404;'>");
+            sb.append("<small><b>Note:</b> Negative values indicate withdrawals from the account.</small>");
+            sb.append("</div>");
+        }
+        
         sb.append("</div>");
         
         sb.append("</body></html>");
@@ -681,12 +691,16 @@ public class InvestmentCalculator extends JFrame {
         });
     }
 
-    private String generateAnnualSchedule(InvestmentResult result) {
+        private String generateAnnualSchedule(InvestmentResult result) {
         StringBuilder sb = new StringBuilder();
         String currencySymbol = getCurrencySymbol(selectedCurrency);
         
+        // Update column header based on whether we have contributions or withdrawals
+        boolean hasWithdrawals = result.getTotalContributions().compareTo(BigDecimal.ZERO) < 0;
+        String contributionLabel = hasWithdrawals ? "Withdrawals" : "Contributions";
+        
         sb.append(String.format("%-6s %-18s %-18s %-18s %-18s%n", 
-            "Year", "Start Balance", "Contributions", "Interest", "End Balance"));
+            "Year", "Start Balance", contributionLabel, "Interest", "End Balance"));
         sb.append("-".repeat(90)).append("\n");
         
         List<YearlyData> yearlyData = result.getYearlyData();
@@ -706,8 +720,12 @@ public class InvestmentCalculator extends JFrame {
         StringBuilder sb = new StringBuilder();
         String currencySymbol = getCurrencySymbol(selectedCurrency);
         
+        // Update column header based on whether we have contributions or withdrawals
+        boolean hasWithdrawals = result.getTotalContributions().compareTo(BigDecimal.ZERO) < 0;
+        String contributionLabel = hasWithdrawals ? "Withdrawals" : "Contributions";
+        
         sb.append(String.format("%-10s %-18s %-18s %-18s %-18s%n", 
-            "Month", "Start Balance", "Contributions", "Interest", "End Balance"));
+            "Month", "Start Balance", contributionLabel, "Interest", "End Balance"));
         sb.append("-".repeat(90)).append("\n");
         
         List<MonthlyData> monthlyData = result.getMonthlyData();

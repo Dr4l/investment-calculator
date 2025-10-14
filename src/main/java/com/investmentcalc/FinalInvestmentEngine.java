@@ -40,7 +40,7 @@ public class FinalInvestmentEngine {
         BigDecimal contributionPerMonth = additionalContribution;
         if (contributionsPerYear > 0) {
             // Assume additionalContribution is annual total, so divide by contributions per year
-            contributionPerMonth = additionalContribution.divide(BigDecimal.valueOf(contributionsPerYear), 2, RoundingMode.HALF_UP);
+            contributionPerMonth = additionalContribution.divide(BigDecimal.valueOf(contributionsPerYear), 5, RoundingMode.HALF_UP);
         }
         
         // Process each month
