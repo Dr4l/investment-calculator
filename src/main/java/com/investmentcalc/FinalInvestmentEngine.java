@@ -146,7 +146,7 @@ public class FinalInvestmentEngine {
             BigDecimal thisMonthContributions = BigDecimal.ZERO;
 
             // Determine contributions this month
-            if (contributionsPerYear > 0) {
+            if (contributionsPerYear > 0 || additionalContribution.compareTo(BigDecimal.ZERO) != 0) {
                 switch (contributionsPerYear) {
                     case 1: // annual -> assumed in month 1 (January)
                         if ((month - 1) % 12 == 0) {
@@ -169,9 +169,9 @@ public class FinalInvestmentEngine {
                 }
             }
 
-            // If contributions are at beginning, add before interest
-            if (contributeAtBeginning && thisMonthContributions.compareTo(BigDecimal.ZERO) > 0) {
-                currentBalance = currentBalance.add(thisMonthContributions);
+            // Handle both positive contributions and negative withdrawals
+            if (contributeAtBeginning && thisMonthContributions.compareTo(BigDecimal.ZERO) != 0) {
+                currentBalance = currentBalance.add(thisMonthContributions); // This will subtract if negative
             }
 
             // Calculate interest for the month using the discrete compounding monthly factor
@@ -193,9 +193,9 @@ public class FinalInvestmentEngine {
             // Add computed interest to current balance
             currentBalance = currentBalance.add(thisMonthInterest);
 
-            // If contributions are at end, add after interest
-            if (!contributeAtBeginning && thisMonthContributions.compareTo(BigDecimal.ZERO) > 0) {
-                currentBalance = currentBalance.add(thisMonthContributions);
+            // Handle end-of-period contributions/withdrawals
+            if (!contributeAtBeginning && thisMonthContributions.compareTo(BigDecimal.ZERO) != 0) {
+                currentBalance = currentBalance.add(thisMonthContributions); // This will subtract if negative
             }
 
             // Record display data

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.investmentcalc.FinalInvestmentEngineTest" time="0.046" tests="6" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.investmentcalc.FinalInvestmentEngineTest" time="0.038" tests="6" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="25"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -12,7 +12,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="GB"/>
     <property name="sun.boot.library.path" value="/opt/homebrew/Cellar/openjdk/25/libexec/openjdk.jdk/Contents/Home/lib"/>
-    <property name="sun.java.command" value="/Users/dragosvrabie/InvestmentCalc/investment-calculator/target/surefire/surefirebooter-20251014161658929_3.jar /Users/dragosvrabie/InvestmentCalc/investment-calculator/target/surefire 2025-10-14T16-16-58_828-jvmRun1 surefire-20251014161658929_1tmp surefire_0-20251014161658929_2tmp"/>
+    <property name="sun.java.command" value="/Users/dragosvrabie/InvestmentCalc/investment-calculator/target/surefire/surefirebooter-20251016003655269_3.jar /Users/dragosvrabie/InvestmentCalc/investment-calculator/target/surefire 2025-10-16T00-36-55_175-jvmRun1 surefire-20251016003655269_1tmp surefire_0-20251016003655269_2tmp"/>
     <property name="http.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="/Users/dragosvrabie/InvestmentCalc/investment-calculator/target/test-classes:/Users/dragosvrabie/InvestmentCalc/investment-calculator/target/classes:/Users/dragosvrabie/.m2/repository/org/jfree/jfreechart/1.5.3/jfreechart-1.5.3.jar:/Users/dragosvrabie/.m2/repository/org/jfree/jcommon/1.0.24/jcommon-1.0.24.jar:/Users/dragosvrabie/.m2/repository/com/formdev/flatlaf/3.2.5/flatlaf-3.2.5.jar:/Users/dragosvrabie/.m2/repository/org/junit/jupiter/junit-jupiter/5.9.2/junit-jupiter-5.9.2.jar:/Users/dragosvrabie/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.9.2/junit-jupiter-api-5.9.2.jar:/Users/dragosvrabie/.m2/repository/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar:/Users/dragosvrabie/.m2/repository/org/junit/platform/junit-platform-commons/1.9.2/junit-platform-commons-1.9.2.jar:/Users/dragosvrabie/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/dragosvrabie/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.9.2/junit-jupiter-params-5.9.2.jar:/Users/dragosvrabie/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.9.2/junit-jupiter-engine-5.9.2.jar:/Users/dragosvrabie/.m2/repository/org/junit/platform/junit-platform-engine/1.9.2/junit-platform-engine-1.9.2.jar:"/>
@@ -29,7 +29,7 @@
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="apple.awt.application.name" value="ForkedBooter"/>
-    <property name="surefire.real.class.path" value="/Users/dragosvrabie/InvestmentCalc/investment-calculator/target/surefire/surefirebooter-20251014161658929_3.jar"/>
+    <property name="surefire.real.class.path" value="/Users/dragosvrabie/InvestmentCalc/investment-calculator/target/surefire/surefirebooter-20251016003655269_3.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.runtime.version" value="25"/>
@@ -59,7 +59,7 @@
     <property name="socksNonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.class.version" value="69.0"/>
   </properties>
-  <testcase name="testSimpleAnnualCompounding" classname="com.investmentcalc.FinalInvestmentEngineTest" time="0.021">
+  <testcase name="testSimpleAnnualCompounding" classname="com.investmentcalc.FinalInvestmentEngineTest" time="0.022">
     <system-out><![CDATA[
 === Test: Simple Annual Compounding ===
 Input: $1000 at 10% annually for 1 year(s)
@@ -68,7 +68,7 @@ Actual:   $1100.00
 Result:   ✅ PASS
 ]]></system-out>
   </testcase>
-  <testcase name="testNegativeContributions" classname="com.investmentcalc.FinalInvestmentEngineTest" time="0.002">
+  <testcase name="testNegativeContributions" classname="com.investmentcalc.FinalInvestmentEngineTest" time="0.001">
     <system-out><![CDATA[
 === Test: Negative Contributions (Withdrawals) ===
 Input: $10000 starting, withdraw $1000, 10% annually for 1 year
@@ -90,7 +90,7 @@ Actual:   $3520.00
 Result:   ✅ PASS
 ]]></system-out>
   </testcase>
-  <testcase name="testDailyVsMonthlyCompounding" classname="com.investmentcalc.FinalInvestmentEngineTest" time="0.013">
+  <testcase name="testDailyVsMonthlyCompounding" classname="com.investmentcalc.FinalInvestmentEngineTest" time="0.002">
     <system-out><![CDATA[
 === Test: Daily vs Monthly Compounding ===
 Input: $1000 at 12% for 1 year(s)
