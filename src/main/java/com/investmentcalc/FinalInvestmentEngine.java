@@ -6,10 +6,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Final working investment calculator engine based on verified manual calculations
+ * Final working investment calculator engine based on verified manual calculations.
+ * This version is corrected to handle misaligned contribution and compounding frequencies
+ * with improved precision and clearer logic.
  */
 public class FinalInvestmentEngine {
-    
+
     public InvestmentResult calculateInvestment(
             BigDecimal startingAmount,
             int years,
@@ -18,130 +20,147 @@ public class FinalInvestmentEngine {
             BigDecimal additionalContribution,
             int contributionsPerYear,
             boolean contributeAtBeginning) {
-        
+
         List<MonthlyData> monthlyData = new ArrayList<>();
         List<YearlyData> yearlyData = new ArrayList<>();
-        
+
         BigDecimal currentBalance = startingAmount;
         BigDecimal totalContributions = startingAmount;
         BigDecimal totalInterest = BigDecimal.ZERO;
-        
-        // Track yearly data
+
+        // Yearly data tracking
         BigDecimal yearlyStartBalance = startingAmount;
         BigDecimal yearlyContributions = BigDecimal.ZERO;
         BigDecimal yearlyInterest = BigDecimal.ZERO;
-        
-        // Calculate monthly rate directly from annual rate (7% / 12 months)
-        BigDecimal monthlyRate = annualReturnRate.divide(BigDecimal.valueOf(100 * 12), 10, RoundingMode.HALF_UP);
-        
-        // Calculate contribution per month
-        // If additionalContribution is the total annual contribution, divide by contributions per year
-        // If additionalContribution is per-contribution amount, use it directly
-        BigDecimal contributionPerMonth = additionalContribution;
+
+        // Monthly data tracking (for display purposes)
+        BigDecimal monthlyStartBalance = startingAmount;
+        BigDecimal monthlyContributionsAgg = BigDecimal.ZERO;
+        BigDecimal monthlyInterestAgg = BigDecimal.ZERO;
+
+        int compoundingPeriodsPerYear = getCompoundingPeriods(compoundingFrequency);
+        // Use high precision for the periodic rate to avoid rounding errors during calculation
+        BigDecimal periodicRate = annualReturnRate.divide(BigDecimal.valueOf(100 * compoundingPeriodsPerYear), 20, RoundingMode.HALF_UP);
+        BigDecimal multiplier = BigDecimal.ONE.add(periodicRate);
+
+        BigDecimal contributionAmountPerEvent = BigDecimal.ZERO;
         if (contributionsPerYear > 0) {
-            // Assume additionalContribution is annual total, so divide by contributions per year
-            contributionPerMonth = additionalContribution.divide(BigDecimal.valueOf(contributionsPerYear), 5, RoundingMode.HALF_UP);
+            // Use high precision for contribution amount as well
+            contributionAmountPerEvent = additionalContribution.divide(BigDecimal.valueOf(contributionsPerYear), 10, RoundingMode.HALF_UP);
         }
-        
-        // Process each month
-        for (int month = 1; month <= years * 12; month++) {
-            BigDecimal monthStartBalance = currentBalance;
-            BigDecimal monthContributions = BigDecimal.ZERO;
-            
-            // Add contribution based on timing preference
-            if (shouldAddContribution(month, contributionsPerYear)) {
-                if (contributeAtBeginning) {
-                    // Add contribution at BEGINNING of month
-                    currentBalance = currentBalance.add(contributionPerMonth);
-                    monthContributions = contributionPerMonth;
-                    totalContributions = totalContributions.add(contributionPerMonth);
-                    yearlyContributions = yearlyContributions.add(contributionPerMonth);
+
+        int totalPeriods = years * compoundingPeriodsPerYear;
+        int currentMonthForDisplay = 1;
+
+        // CORRECTED: Use BigDecimal for the tracker to avoid floating-point errors
+        BigDecimal contributionScheduleTracker = BigDecimal.ZERO;
+        BigDecimal contributionsPerCompoundingPeriod = BigDecimal.ZERO;
+        if (compoundingPeriodsPerYear > 0) {
+            contributionsPerCompoundingPeriod = BigDecimal.valueOf(contributionsPerYear)
+                    .divide(BigDecimal.valueOf(compoundingPeriodsPerYear), 20, RoundingMode.HALF_UP);
+        }
+
+
+        // Main calculation loop iterates over each compounding period
+        for (int period = 1; period <= totalPeriods; period++) {
+
+            // --- 1. Calculate Contributions for this Period ---
+            BigDecimal contributionsThisPeriod = BigDecimal.ZERO;
+            if (contributionsPerYear > 0) {
+                contributionScheduleTracker = contributionScheduleTracker.add(contributionsPerCompoundingPeriod);
+                while (contributionScheduleTracker.compareTo(BigDecimal.ONE) >= 0) {
+                    contributionsThisPeriod = contributionsThisPeriod.add(contributionAmountPerEvent);
+                    contributionScheduleTracker = contributionScheduleTracker.subtract(BigDecimal.ONE);
                 }
             }
-            
-            // Calculate interest for this month
-            BigDecimal monthInterest = currentBalance.multiply(monthlyRate);
-            currentBalance = currentBalance.add(monthInterest);
-            totalInterest = totalInterest.add(monthInterest);
-            yearlyInterest = yearlyInterest.add(monthInterest);
-            
-            // Add contribution at END of month if that's the preference
-            if (shouldAddContribution(month, contributionsPerYear) && !contributeAtBeginning) {
-                currentBalance = currentBalance.add(contributionPerMonth);
-                monthContributions = contributionPerMonth;
-                totalContributions = totalContributions.add(contributionPerMonth);
-                yearlyContributions = yearlyContributions.add(contributionPerMonth);
+
+            // Update total and yearly contribution trackers
+            totalContributions = totalContributions.add(contributionsThisPeriod);
+            yearlyContributions = yearlyContributions.add(contributionsThisPeriod);
+            monthlyContributionsAgg = monthlyContributionsAgg.add(contributionsThisPeriod);
+
+            // --- 2. Apply Contributions and Calculate Interest (CORRECTED LOGIC) ---
+            BigDecimal interestThisPeriod;
+            if (contributeAtBeginning) {
+                // Add contributions first, then apply interest to the new total
+                BigDecimal balanceAfterContribution = currentBalance.add(contributionsThisPeriod);
+                BigDecimal balanceAfterCompounding = balanceAfterContribution.multiply(multiplier);
+                interestThisPeriod = balanceAfterCompounding.subtract(balanceAfterContribution);
+                currentBalance = balanceAfterCompounding;
+            } else {
+                // Apply interest first, then add contributions at the end
+                BigDecimal balanceAfterCompounding = currentBalance.multiply(multiplier);
+                interestThisPeriod = balanceAfterCompounding.subtract(currentBalance);
+                currentBalance = balanceAfterCompounding.add(contributionsThisPeriod);
             }
-            
-            // Store monthly data
-            int year = ((month - 1) / 12) + 1;
-            monthlyData.add(new MonthlyData(
-                String.format("Y%d-M%d", year, ((month - 1) % 12) + 1),
-                monthStartBalance,
-                monthContributions,
-                monthInterest,
-                currentBalance
-            ));
-            
-            // Store yearly data at the end of each year
-            if (month % 12 == 0 || month == years * 12) {
-                yearlyData.add(new YearlyData(
-                    year,
-                    yearlyStartBalance,
-                    yearlyContributions,
-                    yearlyInterest,
-                    currentBalance
-                ));
-                
-                // Reset yearly tracking
+
+            // Update total and yearly interest trackers
+            totalInterest = totalInterest.add(interestThisPeriod);
+            yearlyInterest = yearlyInterest.add(interestThisPeriod);
+            monthlyInterestAgg = monthlyInterestAgg.add(interestThisPeriod);
+
+            // --- 3. Aggregate data for display (Yearly & Monthly schedules) ---
+
+            // Check if a year has ended
+            if (period % compoundingPeriodsPerYear == 0 && period > 0) {
+                int currentYear = period / compoundingPeriodsPerYear;
+                yearlyData.add(new YearlyData(currentYear, yearlyStartBalance, yearlyContributions, yearlyInterest, currentBalance));
+
+                // Reset for the next year
                 yearlyStartBalance = currentBalance;
                 yearlyContributions = BigDecimal.ZERO;
                 yearlyInterest = BigDecimal.ZERO;
             }
+            
+            // Check if a month has ended (for display purposes)
+            // This approximates which compounding period corresponds to a month-end
+            int monthEquivalent = (int) Math.floor(((double) period / compoundingPeriodsPerYear) * 12);
+            if (monthEquivalent >= currentMonthForDisplay && currentMonthForDisplay <= years * 12) {
+                 int year = ((currentMonthForDisplay - 1) / 12) + 1;
+                 String monthLabel = String.format("Year %d, Month %d", year, ((currentMonthForDisplay - 1) % 12) + 1);
+
+                monthlyData.add(new MonthlyData(monthLabel, monthlyStartBalance, monthlyContributionsAgg, monthlyInterestAgg, currentBalance));
+                
+                // Reset for the next month's aggregation
+                monthlyStartBalance = currentBalance;
+                monthlyContributionsAgg = BigDecimal.ZERO;
+                monthlyInterestAgg = BigDecimal.ZERO;
+                currentMonthForDisplay++;
+            }
         }
-        
+
         return new InvestmentResult(
-            startingAmount,
-            years,
-            annualReturnRate,
-            compoundingFrequency,
-            currentBalance,
-            totalContributions,
-            totalInterest,
-            monthlyData,
-            yearlyData
+                startingAmount,
+                years,
+                annualReturnRate,
+                compoundingFrequency,
+                currentBalance,
+                totalContributions,
+                totalInterest,
+                monthlyData,
+                yearlyData
         );
     }
-    
-    private boolean shouldAddContribution(int month, int contributionsPerYear) {
-        if (contributionsPerYear == 0) return false;
-        
-        switch (contributionsPerYear) {
-            case 12: // Monthly
-                return true;
-            case 4: // Quarterly (every 3 months)
-                return month % 3 == 1;
-            case 1: // Annually
-                return month % 12 == 1;
-            case 52: // Weekly (approximately every month for simplicity)
-                return true;
-            case 26: // Bi-weekly (approximately every 2 weeks)
-                return month % 1 == 0; // Every month for simplicity
-            case 24: // Bi-monthly
-                return month % 2 == 1; // Every other month starting with month 1
-            case 365: // Daily
-                return true; // Every month for simplicity
-            case 366: // Daily (leap year)
-                return true; // Every month for simplicity
+
+    /**
+     * Returns the number of compounding periods in a year for a given frequency.
+     * @param compoundingFrequency The frequency string (e.g., "Annually", "Monthly").
+     * @return The number of periods per year.
+     */
+    private int getCompoundingPeriods(String compoundingFrequency) {
+        switch (compoundingFrequency) {
+            case "Annually":
+                return 1;
+            case "Quarterly":
+                return 4;
+            case "Monthly":
+                return 12;
+            case "Weekly":
+                return 52;
+            case "Daily":
+                return 365;
             default:
-                // Spread evenly based on contributions per year
-                if (contributionsPerYear <= 12) {
-                    // For frequencies up to monthly
-                    return month % (12 / contributionsPerYear) == 1;
-                } else {
-                    // For higher frequencies, contribute every month
-                    return true;
-                }
+                return 12; // Default to monthly if frequency is unknown
         }
     }
 }
