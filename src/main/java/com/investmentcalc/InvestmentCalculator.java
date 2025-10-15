@@ -696,7 +696,8 @@ public class InvestmentCalculator extends JFrame {
         });
     }
 
-        private String generateAnnualSchedule(InvestmentResult result) {
+    // Fix the annual schedule formatting in InvestmentCalculator.java
+    private String generateAnnualSchedule(InvestmentResult result) {
         StringBuilder sb = new StringBuilder();
         String currencySymbol = getCurrencySymbol(selectedCurrency);
         
@@ -710,7 +711,7 @@ public class InvestmentCalculator extends JFrame {
         
         List<YearlyData> yearlyData = result.getYearlyData();
         for (YearlyData data : yearlyData) {
-            sb.append(String.format("%-6d %s%15.2f %s%15.2f %s%15.2f %s%15.2f%n",
+            sb.append(String.format("%-6d %s%-17.2f %s%-17.2f %s%-17.2f %s%-17.2f%n",
                 data.getYear(), 
                 currencySymbol, data.getStartBalance().setScale(2, RoundingMode.HALF_UP), 
                 currencySymbol, data.getContributions().setScale(2, RoundingMode.HALF_UP),
@@ -729,16 +730,16 @@ public class InvestmentCalculator extends JFrame {
         boolean hasWithdrawals = result.getTotalContributions().subtract(result.getStartingAmount()).compareTo(BigDecimal.ZERO) < 0;
         String contributionLabel = hasWithdrawals ? "Withdrawals" : "Contributions";
         
-        sb.append(String.format("%-10s %-18s %-18s %-18s %-18s%n", 
+        sb.append(String.format("%-15s %-15s %-15s %-15s %-15s%n", 
             "Month", "Start Balance", contributionLabel, "Interest", "End Balance"));
-        sb.append("-".repeat(90)).append("\n");
+        sb.append("-".repeat(80)).append("\n");
         
         List<MonthlyData> monthlyData = result.getMonthlyData();
         
         // Show ALL monthly data - no limit
         for (int i = 0; i < monthlyData.size(); i++) {
             MonthlyData data = monthlyData.get(i);
-            sb.append(String.format("%-10s %s%15.2f %s%15.2f %s%15.2f %s%15.2f%n",
+            sb.append(String.format("%-15s %s%-14.2f %s%-14.2f %s%-14.2f %s%-14.2f%n",
                 data.getMonth(),
                 currencySymbol, data.getStartBalance().setScale(2, RoundingMode.HALF_UP), 
                 currencySymbol, data.getContributions().setScale(2, RoundingMode.HALF_UP),
@@ -747,7 +748,7 @@ public class InvestmentCalculator extends JFrame {
         }
         
         // Add summary at the end
-        sb.append("-".repeat(90)).append("\n");
+        sb.append("-".repeat(80)).append("\n");
         sb.append(String.format("Total months: %d%n", monthlyData.size()));
         
         return sb.toString();

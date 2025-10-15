@@ -1,6 +1,32 @@
-# Investment Calculator
+# 💰 Investment Calculator - Advanced Financial Analytics
 
-A comprehensive Java-based investment calculator that computes compound interest growth with periodic contributions and provides detailed visualizations and schedules.
+<div align="center">
+  <img src="docs/images/calculator-icon.png" alt="Investment Calculator Logo" width="120" height="120"/>
+  
+  <h3>📈 Plan your financial future with precision!</h3>
+  
+  <p>A comprehensive Java Swing application for compound interest calculations with interactive charts, detailed schedules, multi-currency support, and automated testing infrastructure.</p>
+  
+  [![Java](https://img.shields.io/badge/Java_11+-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
+  [![Swing](https://img.shields.io/badge/Java_Swing-ED8B00?style=for-the-badge&logo=java&logoColor=white)](https://docs.oracle.com/javase/tutorial/uiswing/)
+  [![Maven](https://img.shields.io/badge/Apache_Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white)](https://maven.apache.org/)
+  [![JUnit](https://img.shields.io/badge/JUnit_5-25A162?style=for-the-badge&logo=junit5&logoColor=white)](https://junit.org/junit5/)
+  [![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/features/actions)
+  [![JFreeChart](https://img.shields.io/badge/JFreeChart-FF6B6B?style=for-the-badge&logo=chartdotjs&logoColor=white)](https://www.jfree.org/jfreechart/)
+</div>
+
+## 📸 Application Screenshots
+
+<div align="center">
+  <img src="docs/images/main-gui.png" alt="Main Application Interface" width="600"/>
+  <br>
+  <em>Main Application Interface with Investment Parameters and Results</em>
+  <br><br>
+  
+  <img src="docs/images/chart-view.png" alt="Interactive Chart View" width="600"/>
+  <br>
+  <em>Interactive Growth Chart and Investment Breakdown Visualization</em>
+</div>
 
 ## Features
 
@@ -97,6 +123,9 @@ investment-calculator/
 ├── .github/
 │   └── workflows/
 │       └── test.yml                           # GitHub Actions CI/CD configuration
+├── docs/
+│   ├── images/                               # Application screenshots
+│   └── calculation-discrepancies.md         # Calculation methodology documentation
 ├── src/
 │   ├── main/java/com/investmentcalc/
 │   │   ├── InvestmentCalculator.java          # Main GUI application
