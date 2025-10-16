@@ -1,7 +1,7 @@
 # 💰 Investment Calculator - Advanced Financial Analytics
 
 <div align="center">
-  <img src="docs/images/calculator-icon.png" alt="Investment Calculator Logo" width="120" height="120"/>
+  <img src="docs/images/logo.png" alt="Investment Calculator Logo" width="120" height="120"/>
   
   <h3>📈 Plan your financial future with precision!</h3>
   
