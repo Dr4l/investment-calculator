@@ -755,6 +755,7 @@ public class InvestmentCalculator extends JFrame {
     }
 
     public static void main(String[] args) {
+        UIManager.put("defaultFont", new Font("SansSerif", Font.PLAIN, 12));
         SwingUtilities.invokeLater(() -> {
             try {
                 new InvestmentCalculator().setVisible(true);
