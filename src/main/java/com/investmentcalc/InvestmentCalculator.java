@@ -58,6 +58,10 @@ public class InvestmentCalculator extends JFrame {
     private void initializeLookAndFeel() {
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
+            // Ensure a sensible default font on some Linux/OpenJDK setups where
+            // text fields and other controls render incorrectly.
+            // This mirrors the proposed fix from the reported issue.
+            UIManager.put("defaultFont", new Font("SansSerif", Font.PLAIN, 12));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -453,10 +457,7 @@ public class InvestmentCalculator extends JFrame {
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             try {
                 java.io.File fileToSave = fileChooser.getSelectedFile();
-                String format = "png";
-                
                 if (fileChooser.getFileFilter() == jpgFilter) {
-                    format = "jpg";
                     if (!fileToSave.getName().toLowerCase().endsWith(".jpg")) {
                         fileToSave = new java.io.File(fileToSave.getAbsolutePath() + ".jpg");
                     }
