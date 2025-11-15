@@ -39,6 +39,7 @@ public class InvestmentCalculator extends JFrame {
     private InvestmentChartPanel chartPanelComponent;
     private InvestmentPieChartPanel pieChartPanelComponent; // Added pie chart panel
     private String selectedCurrency = "USD";
+    private InvestmentResult lastResult; // store last calculated result for export
     
     private JFrame fullScreenChartFrame;
 
@@ -283,6 +284,38 @@ public class InvestmentCalculator extends JFrame {
         
         scheduleTabbedPane.setPreferredSize(new Dimension(900, 250));
         panel.add(scheduleTabbedPane, BorderLayout.CENTER);
+        
+        // Export controls (CSV)
+        JPanel exportPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        exportPanel.setBackground(new Color(250, 250, 250));
+        JButton exportAnnualBtn = new JButton("Export Annual CSV");
+        JButton exportMonthlyBtn = new JButton("Export Monthly CSV");
+        exportAnnualBtn.setBackground(new Color(23, 162, 184));
+        exportAnnualBtn.setForeground(Color.WHITE);
+        exportMonthlyBtn.setBackground(new Color(23, 162, 184));
+        exportMonthlyBtn.setForeground(Color.WHITE);
+
+        exportPanel.add(exportAnnualBtn);
+        exportPanel.add(exportMonthlyBtn);
+
+        panel.add(exportPanel, BorderLayout.SOUTH);
+
+        // Action listeners for export buttons
+        exportAnnualBtn.addActionListener(e -> {
+            if (lastResult == null) {
+                JOptionPane.showMessageDialog(this, "No results to export. Please calculate first.", "No Data", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            exportScheduleCSV(lastResult, false);
+        });
+
+        exportMonthlyBtn.addActionListener(e -> {
+            if (lastResult == null) {
+                JOptionPane.showMessageDialog(this, "No results to export. Please calculate first.", "No Data", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            exportScheduleCSV(lastResult, true);
+        });
         
         return panel;
     }
@@ -561,6 +594,8 @@ public class InvestmentCalculator extends JFrame {
                 additionalContribution, contributionsPerYear, 
                 contributionTiming.equals("Beginning of Period")
             );
+            // Store last result for export operations
+            lastResult = result;
             
             // Format end balance to 2 decimal places for display
             BigDecimal formattedEndBalance = result.getEndBalance().setScale(2, RoundingMode.HALF_UP);
@@ -753,6 +788,48 @@ public class InvestmentCalculator extends JFrame {
         sb.append(String.format("Total months: %d%n", monthlyData.size()));
         
         return sb.toString();
+    }
+
+    /**
+     * Export the provided result's schedule to CSV. If monthly==true exports monthly schedule,
+     * otherwise exports annual schedule.
+     */
+    private void exportScheduleCSV(InvestmentResult result, boolean monthly) {
+        if (result == null) return;
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Export Schedule to CSV");
+        String defaultName = monthly ? "monthly_schedule.csv" : "annual_schedule.csv";
+        fileChooser.setSelectedFile(new java.io.File(defaultName));
+
+        int userSelection = fileChooser.showSaveDialog(this);
+        if (userSelection != JFileChooser.APPROVE_OPTION) return;
+
+        java.io.File fileToSave = fileChooser.getSelectedFile();
+        if (!fileToSave.getName().toLowerCase().endsWith(".csv")) {
+            fileToSave = new java.io.File(fileToSave.getAbsolutePath() + ".csv");
+        }
+
+        try (java.io.PrintWriter pw = new java.io.PrintWriter(fileToSave, "UTF-8")) {
+            if (monthly) {
+                pw.println("Month,Start Balance,Contributions,Interest,End Balance");
+                for (MonthlyData d : result.getMonthlyData()) {
+                    pw.printf("%s,%.2f,%.2f,%.2f,%.2f%n",
+                        d.getMonth(), d.getStartBalance(), d.getContributions(), d.getInterestEarned(), d.getEndBalance());
+                }
+            } else {
+                pw.println("Year,Start Balance,Contributions,Interest,End Balance");
+                for (YearlyData d : result.getYearlyData()) {
+                    pw.printf("%d,%.2f,%.2f,%.2f,%.2f%n",
+                        d.getYear(), d.getStartBalance(), d.getContributions(), d.getInterestEarned(), d.getEndBalance());
+                }
+            }
+
+            JOptionPane.showMessageDialog(this, "Schedule exported successfully:\n" + fileToSave.getAbsolutePath(), "Export Complete", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error exporting CSV: " + e.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {
