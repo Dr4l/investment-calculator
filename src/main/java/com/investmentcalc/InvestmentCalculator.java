@@ -810,21 +810,8 @@ public class InvestmentCalculator extends JFrame {
             fileToSave = new java.io.File(fileToSave.getAbsolutePath() + ".csv");
         }
 
-        try (java.io.PrintWriter pw = new java.io.PrintWriter(fileToSave, "UTF-8")) {
-            if (monthly) {
-                pw.println("Month,Start Balance,Contributions,Interest,End Balance");
-                for (MonthlyData d : result.getMonthlyData()) {
-                    pw.printf("%s,%.2f,%.2f,%.2f,%.2f%n",
-                        d.getMonth(), d.getStartBalance(), d.getContributions(), d.getInterestEarned(), d.getEndBalance());
-                }
-            } else {
-                pw.println("Year,Start Balance,Contributions,Interest,End Balance");
-                for (YearlyData d : result.getYearlyData()) {
-                    pw.printf("%d,%.2f,%.2f,%.2f,%.2f%n",
-                        d.getYear(), d.getStartBalance(), d.getContributions(), d.getInterestEarned(), d.getEndBalance());
-                }
-            }
-
+        try {
+            CsvExporter.writeScheduleCsvToFile(result, monthly, fileToSave);
             JOptionPane.showMessageDialog(this, "Schedule exported successfully:\n" + fileToSave.getAbsolutePath(), "Export Complete", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error exporting CSV: " + e.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);

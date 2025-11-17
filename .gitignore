@@ -1,0 +1,50 @@
+# Java / Maven
+/target/
+/pom.xml.tag
+/pom.xml.releaseBackup
+/pom.xml.versionsBackup
+/.mvn/wrapper/maven-wrapper.jar
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# IntelliJ
+.idea/
+*.iml
+/out/
+
+# VSCode
+.vscode/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Compiled class files
+*.class
+
+# Generated sources
+/generated/
+
+# Temporary files
+*~
+*.swp
+
+# Build directories
+bin/
+build/
+
+# Test reports
+surefire-reports/
+failsafe-reports/
+
+# OS files
+Thumbs.db
+
+# Keystore / credentials
+*.jks
+*.keystore
