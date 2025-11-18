@@ -112,6 +112,23 @@ mvn test -X
 mvn test -Dtest=FinalInvestmentEngineTest
 ```
 
+Additional useful test commands:
+
+```bash
+# Run only the CSV exporter test class
+mvn -Dtest=com.investmentcalc.CsvExporterTest test
+
+# Run a single test method
+mvn -Dtest=com.investmentcalc.CsvExporterTest#testMonthlyCsvExport test
+
+# Run tests quietly (less console noise)
+mvn -q test
+
+# Run tests and print surefire summary (helpful in CI)
+mvn -DtrimStackTrace=false test
+```
+```
+
 ### Continuous Integration
 
 The project uses GitHub Actions for automated testing on every push and pull request. See `.github/workflows/test.yml` for the CI configuration.
@@ -135,8 +152,10 @@ investment-calculator/
 │   │   ├── InvestmentPieChartPanel.java       # Pie chart for investment breakdown
 │   │   ├── MonthlyData.java                   # Monthly data structure
 │   │   └── YearlyData.java                    # Yearly data structure
+│   │   ├── CsvExporter.java                   # CSV export utility (tested)
 │   └── test/java/com/investmentcalc/
 │       └── FinalInvestmentEngineTest.java     # Comprehensive test suite
+│       └── CsvExporterTest.java               # CSV export unit tests
 ├── pom.xml                                     # Maven configuration
 └── README.md                                   # This file
 ```
@@ -163,6 +182,12 @@ For a detailed breakdown of these models and why discrepancies appear, please se
 - **GUI Framework**: Swing with modern FlatLaf styling
 - **Architecture**: Clean separation between calculation logic and presentation layer
 - **Testing**: JUnit 5 with comprehensive test coverage including edge cases
+
+Additional technical notes:
+
+- **CSV export**: `CsvExporter` centralizes CSV output for both monthly and annual schedules. It writes UTF-8 CSV using Locale.US numeric formatting and rounds values to two decimals (RoundingMode.HALF_UP). The UI (`InvestmentCalculator`) delegates CSV file creation to this utility so the same logic is testable and reusable.
+- **Tests**: Unit tests for CSV export (`CsvExporterTest`) use JUnit 5's `@TempDir` to create temporary files and assert exact CSV headers and numeric values. The test output is intentionally verbose (prints a small summary and `Result:   ✅ PASS`) to match the project's existing test-style reporting used in CI logs.
+- **Future improvements**: Background CSV export via SwingWorker (to avoid blocking the EDT), locale-aware formatting options, and optional currency columns for exported files.
 
 ## Customization
 
