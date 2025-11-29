@@ -8,6 +8,8 @@ import org.jfree.chart.entity.XYItemEntity;
 import org.jfree.data.xy.XYDataset;
 
 import javax.swing.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,7 +17,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -805,18 +806,70 @@ public class InvestmentCalculator extends JFrame {
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection != JFileChooser.APPROVE_OPTION) return;
 
-        java.io.File fileToSave = fileChooser.getSelectedFile();
-        if (!fileToSave.getName().toLowerCase().endsWith(".csv")) {
-            fileToSave = new java.io.File(fileToSave.getAbsolutePath() + ".csv");
+        java.io.File selected = fileChooser.getSelectedFile();
+        final java.io.File fileToSave;
+        if (!selected.getName().toLowerCase().endsWith(".csv")) {
+            fileToSave = new java.io.File(selected.getAbsolutePath() + ".csv");
+        } else {
+            fileToSave = selected;
         }
 
-        try {
-            CsvExporter.writeScheduleCsvToFile(result, monthly, fileToSave);
-            JOptionPane.showMessageDialog(this, "Schedule exported successfully:\n" + fileToSave.getAbsolutePath(), "Export Complete", JOptionPane.INFORMATION_MESSAGE);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error exporting CSV: " + e.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
-        }
+        // Create and run background worker to perform CSV export without blocking the EDT
+        CsvExportWorker worker = new CsvExportWorker(result, monthly, fileToSave);
+
+        // Progress dialog
+        final JDialog progressDialog = new JDialog(this, "Exporting CSV", true);
+        JProgressBar progressBar = new JProgressBar(0, 100);
+        progressBar.setStringPainted(true);
+        JButton cancelBtn = new JButton("Cancel");
+
+        cancelBtn.addActionListener(e -> {
+            cancelBtn.setEnabled(false);
+            worker.cancel(true);
+        });
+
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panel.add(new JLabel("Exporting schedule to: " + fileToSave.getName()), BorderLayout.NORTH);
+        panel.add(progressBar, BorderLayout.CENTER);
+        JPanel south = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        south.add(cancelBtn);
+        panel.add(south, BorderLayout.SOUTH);
+
+        progressDialog.getContentPane().add(panel);
+        progressDialog.pack();
+        progressDialog.setLocationRelativeTo(this);
+
+        // Listen to progress updates from worker
+        worker.addPropertyChangeListener(new PropertyChangeListener() {
+            @Override
+            public void propertyChange(PropertyChangeEvent evt) {
+                if ("progress".equals(evt.getPropertyName())) {
+                    int val = (Integer) evt.getNewValue();
+                    progressBar.setValue(val);
+                }
+                if ("state".equals(evt.getPropertyName())) {
+                    if (SwingWorker.StateValue.DONE == evt.getNewValue()) {
+                        progressDialog.dispose();
+                        try {
+                            worker.get(); // will throw if cancelled or failed
+                            JOptionPane.showMessageDialog(InvestmentCalculator.this, "Schedule exported successfully:\n" + fileToSave.getAbsolutePath(), "Export Complete", JOptionPane.INFORMATION_MESSAGE);
+                        } catch (Exception ex) {
+                            if (worker.isCancelled()) {
+                                JOptionPane.showMessageDialog(InvestmentCalculator.this, "Export cancelled.", "Export Cancelled", JOptionPane.INFORMATION_MESSAGE);
+                            } else {
+                                JOptionPane.showMessageDialog(InvestmentCalculator.this, "Error exporting CSV: " + ex.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
+                                ex.printStackTrace();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        worker.execute();
+        // Show modal dialog while worker runs
+        progressDialog.setVisible(true);
     }
 
     public static void main(String[] args) {
