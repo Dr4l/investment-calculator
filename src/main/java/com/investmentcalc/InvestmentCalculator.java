@@ -296,6 +296,10 @@ public class InvestmentCalculator extends JFrame {
         exportMonthlyBtn.setBackground(new Color(23, 162, 184));
         exportMonthlyBtn.setForeground(Color.WHITE);
 
+    // Small UX: tooltips for the export buttons to improve discoverability
+    exportAnnualBtn.setToolTipText("Export the yearly schedule to a CSV file");
+    exportMonthlyBtn.setToolTipText("Export the full monthly schedule to a CSV file");
+
         exportPanel.add(exportAnnualBtn);
         exportPanel.add(exportMonthlyBtn);
 
