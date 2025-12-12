@@ -13,6 +13,7 @@ import java.beans.PropertyChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
@@ -50,11 +51,34 @@ public class InvestmentCalculator extends JFrame {
         initializeComponents();
         setupLayout();
         setupEventHandlers();
+        setupKeyboardShortcuts();
         
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("Investment Calculator");
         setSize(1000, 800); // Increased height to better fit new chart
         setLocationRelativeTo(null);
+    }
+
+    /**
+     * Register keyboard shortcuts (Cmd/Ctrl+E) to trigger CSV export (monthly by default).
+     */
+    private void setupKeyboardShortcuts() {
+        // Use platform-specific menu shortcut key (Cmd on macOS, Ctrl on Windows/Linux)
+        int menuMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        KeyStroke ks = KeyStroke.getKeyStroke(KeyEvent.VK_E, menuMask);
+
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(ks, "exportCsv");
+        getRootPane().getActionMap().put("exportCsv", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (lastResult == null) {
+                    JOptionPane.showMessageDialog(InvestmentCalculator.this, "No results to export. Please calculate first.", "No Data", JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                }
+                // Default to monthly export when using shortcut
+                exportScheduleCSV(lastResult, true);
+            }
+        });
     }
 
     private void initializeLookAndFeel() {
