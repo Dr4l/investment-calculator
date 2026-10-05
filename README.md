@@ -127,7 +127,6 @@ mvn -q test
 # Run tests and print surefire summary (helpful in CI)
 mvn -DtrimStackTrace=false test
 ```
-```
 
 ### Continuous Integration
 
